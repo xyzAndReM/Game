@@ -31,6 +31,21 @@ def draw_laser(screen,x0,y0,x1,y1,width,height,size):
 		yn -= m
 		xn += n
 		pygame.gfxdraw.filled_circle(screen, int(xn), int(yn), 1, (0,0,0))
+def draw_heart(screen,x0,y0,color,r,full):
+	H = []
+	for i in range(1001):
+		t = 2*i*math.pi/1000
+		H.append( (r*(16*math.sin(t)**3) + x0, -(r*(13*math.cos(t)-5*math.cos(2*t)-2*math.cos(3*t)-math.cos(4*t))) + y0))
+	pygame.gfxdraw.aapolygon(screen,H,color)
+	if(full):
+		pygame.gfxdraw.filled_polygon(screen,H,color)
+def draw_lifebar(screen,x0,y0,color,r,HP):
+	for i in range(3):
+		if(HP > i):
+			full = True
+		else:
+			full = False
+		draw_heart(screen,x0+50*i,y0,color,r,full)
 
 """bgcolor = (255,255,255)
 pygame.init()
