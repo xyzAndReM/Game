@@ -46,6 +46,7 @@ pygame.font.init()
 font_name = pygame.font.get_default_font()
 game_font = pygame.font.SysFont(font_name, 16) #Fonte do jogo (SUJEITO A MUDANÇAS)
 label_font = pygame.font.SysFont(font_name, 14)
+rank_font = pygame.font.Font('sensational.ttf', 32)   #'GoodDog.otf'
 GAME_HP_font = pygame.font.SysFont(font_name, 32)
 #-----------------------------------------------------------
 bullet = None #Objeto do projétil
@@ -59,14 +60,14 @@ while running:
     #####################Queda dos meteoros####################
     if not ticks_to_particles:
         ticks_to_particles = 240
-        env.addParticles(5,y = 0, damage = 1)
+        env.addParticles(2,y = 0, damage = 1)
     else:
         ticks_to_particles -= 1
     ###################Queda dos meteorso-END##################
 
     ######################Queda dos bônus######################
     if not ticks_to_bonus:
-        bonus = env.addParticles(1,y = 0, colour = (0,200,0), life = 1, message = '+1 HP', label = 'HP')
+        bonus = env.addParticles(3,y = 0, colour = (0,200,0), life = 1, message = '+1 HP', label = 'HP', sound = 'life.wav')
         ticks_to_bonus = 720
     else:
         ticks_to_bonus -= 1
@@ -74,7 +75,7 @@ while running:
         
     ######################Queda das bombas######################
     if not ticks_to_bomb:
-        bomb = env.addParticles(3,y = 0, colour = (60,50,50),message = 'KABOOM !',label = 'TNT')
+        bomb = env.addParticles(3,y = 0, colour = (60,50,50),message = 'KABOOM !',label = 'TNT', sound = 'destroyed.wav')
         ticks_to_bomb = 1200
     else:
         ticks_to_bomb -= 1
@@ -118,8 +119,7 @@ while running:
     ########################MIra Laser - END########################
     
     pygame.draw.rect(screen, (0, 0, 0), (0, 0, width, height-120),5) # Desenho das bordas
-    
-    
+    UP = 0
     for p in env.particles:
         #pygame.draw.circle(screen, p.colour, (int(p.x), int(p.y)), p.size, p.thickness)
         pygame.gfxdraw.filled_circle(screen, int(p.x), int(p.y), p.size, p.colour)  # draw filled circle
@@ -130,13 +130,7 @@ while running:
         	label = label_font.render(p.label, 1, (0,0,0))
         label_width = label.get_width()
         label_height = label.get_height()
-        score = game_font.render(str(int(env.points)),1,(100,100,100)) #Mostra o score
-        rank = game_font.render(env.messages[env.rank],1,(100,100,100)) #Mostra o ranking
-
-        
-        screen.blit(label, (p.x-label_width/2, p.y-label_height/2))
-        screen.blit(score, (width/2 - 5,height-60))
-        screen.blit(rank, (width/2 - 15,height-90))
+        screen.blit(label, (p.x-label_width/2, p.y-label_height/2)) 
     for g in env.grave:
         ticks_pop = 120 - g.endurance
         if(ticks_pop <= 60):
@@ -148,12 +142,29 @@ while running:
             env.grave.remove(g)
     for s in env.shockwaves:
     	ticks_pop = 120 - s.endurance
-    	s.size = ticks_pop
+    	s.size = 2*ticks_pop
     	if(ticks_pop <= 120):
     		pygame.gfxdraw.circle(screen,int(s.x),int(s.y),s.size,s.colour)
     		s.endurance -=1
     	if   s.endurance < 0:
     		env.shockwaves.remove(s)
+
+    score = game_font.render(str(int(env.points)),1,(100,100,100))
+    score_width = score.get_width()
+    score_height = score.get_height() #Mostra o score
+    if(env.rank > UP):
+    	rankup = rank_font.render(env.messages[env.rank],1,(255,140,0))
+    	rankup_width = rankup.get_width()
+    	rankup_height = rankup.get_height()
+    	screen.blit(rankup,  ( (width - rankup_width)/2,(height-200-rankup_height)/2 ))
+    	#playsound
+    rank = game_font.render(str(env.rank + 1) + 'x' ,1,(100,100,100))
+    rank_width = rank.get_width()
+    rank_height = rank.get_height()
+    screen.blit(score, ( (width - score_width)/2,height-60))
+    screen.blit(rank,  ( (width - rank_width)/2,height-90))
+
+
 
     pygame.display.flip()
 

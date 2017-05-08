@@ -81,10 +81,15 @@ class Particle():
         self.death = False #Indica se a bolha irá morrer, isto ocorre caso duas bolhas roxas colidam entre si
         self.damage = 0# Dano causado caso a bolha atinja o piso da tela
         self.life = 0# HP fornecida ao ser estourada
-        self.genocide = False #Marca se todas as bolhas devem explodir
+        self.shockwave = False #Marca se todas as bolhas devem explodir
         self.points = 0 #Pontos fornecidos quando a bolha explodir
         self.message = '-1 HP'
         self.label = 'DMG'
+        self.sound = 'plof.wav'
+    def purple_rain(self):
+        self.colour = purple
+        self.points = 100
+        self.damage = 0
 
     def move(self):
         self.x += self.vel[0]#Movimento na coordenada x
@@ -124,6 +129,7 @@ class Environment:
             p.damage = kwargs.get('damage',0)
             p.message =kwargs.get('message','-1 HP')
             p.label = kwargs.get('label','')
+            p.sound = kwargs.get('sound','plof.wav')
             self.particles.append(p)
         if(n == 1):
             return p
@@ -131,27 +137,29 @@ class Environment:
         """Sets the action of bubble pop, such as sound, removing the bubble and adding the event for animation in <scores> queue.
         The variable worth determines if the bubble pop is worth points, blue bubbles popping on the ceiling are not worthy for
         example."""
-        if(particle):
-            play_sound('plof.wav')
-            self.pops +=1
+        if(type(particle) is Particle and particle in self.particles):
+            play_sound(particle.sound)
+            colour = particle.colour
+            x = particle.x
+            y = particle.y
+            self.pops += (not particle.damage) - particle.damage*6
             self.rank = get_rank(self.pops)
             self.points += (self.rank + 1)*particle.points
             if(particle.points):
                 particle.message = '+' + str(int((self.rank + 1)*particle.points)) + ' pts'
-            self.grave.append(Ghost(particle.x,particle.y,particle.message,particle.colour))
+            self.grave.append(Ghost(x,y,particle.message,colour))
             self.hp += particle.life
             self.hp -= particle.damage
             self.particles.remove(particle)
+            if(particle.colour == gray):
+                self.shockwaves.append(Shockwave(x,y))
+
     def color_power(self,p1,p2):
    # """função responsável pelas mudanças de cor na colisão entre bolhas"""
    ##################################COLISAO ENTRE AZUL E VERMELHO############################################
         if (p1.colour == red and p2.colour == blue) or (p2.colour == red and p1.colour == blue):
-            p1.colour = purple
-            p1.points = 100
-            p1.damage = 0
-            p2.colour = purple
-            p2.points = 100
-            p2.damage = 0
+            p1.purple_rain()
+            p2.purple_rain()
             return True #Aplicar colisao
     ###########################################################################################################
     ##################################COLISAO ENTRE AZUL E VERDE###############################################
@@ -160,18 +168,14 @@ class Environment:
                 self.BubblePoP(p1)
             elif(p2.colour == green):
                 self.BubblePoP(p2)
-            play_sound('life.wav')
             return False #Nao aplicar colisao
     ###########################################################################################################
     ##################################COLISAO ENTRE AZUL E CINZA###############################################
         elif (p1.colour == gray and p2.colour == blue) or (p1.colour == blue and p2.colour == gray):
             if(p1.colour == gray):
-                self.shockwaves.append(Shockwave(p1.x,p1.y))
                 self.BubblePoP(p1)
             elif(p2.colour == gray):
-                self.shockwaves.append(Shockwave(p2.x,p2.y))
                 self.BubblePoP(p2)
-            play_sound('destroyed.wav')
             return False #Nao aplicar colisao
     ############################################################################################################
     ###################################COLISAO ENTRE ROXOS######################################################
@@ -180,12 +184,8 @@ class Environment:
                 p1.death = True
                 p2.death = True
             elif(p1.colour == red or p2.colour == red ):
-                p1.colour = purple
-                p1.points = 100
-                p1.damage = 0
-                p2.colour = purple
-                p2.points = 100
-                p2.damage = 0
+                p1.purple_rain()
+                p2.purple_rain()
             return True #Aplicar colisao
         return True
     def collide(self,p1, p2):
@@ -221,10 +221,10 @@ class Environment:
         dx = [p1.x - p2.x, p1.y - p2.y]
         dist = dx[0]**2 + dx[1]**2
         if dist < (p1.size + p2.size)**2:
-            p1.colour = purple
-            p1.points = 100
-            p1.damage = 0
-            self.BubblePoP(p1)
+            if(p1.colour == red):
+                p1.purple_rain()
+            if(  p1.colour != blue):
+                self.BubblePoP(p1)
 
 
     def update(self):
@@ -235,7 +235,8 @@ class Environment:
                 if (particle.protect == 0 and particle.death == True):
                     self.BubblePoP(particle)
             for shock in self.shockwaves:
-                self.shockwave_collide(particle,shock)
+                if(particle):
+                    self.shockwave_collide(particle,shock)
 
             particle.move()
             self.bounce(particle)
