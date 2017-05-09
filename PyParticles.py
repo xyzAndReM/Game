@@ -52,7 +52,7 @@ def play_sound(path):
 
 def get_rank(n):
     """Atribui rank apartir do numero de pops"""
-    k = int(n/3)
+    k = int(n/7)
     if k > 4:
         k = 4
     elif k < 0:
@@ -114,7 +114,7 @@ class Environment:
         self.pops = 0 #Numero de bolhas estoradas atual
         self.rank = 0 #Ranking, decidido pela função get_rank
         self.messages = ['','Cacthy!', 'Ballistick!', 'Awesome!!!','Sensational!!!'] #Messagens indicadoras do ranking
-        self.hp = 3
+        self.hp = 1
     def addParticles(self, n=1, **kwargs):
         """ Add n particles with properties given by keyword arguments """
         for i in range(n):
@@ -142,7 +142,7 @@ class Environment:
             colour = particle.colour
             x = particle.x
             y = particle.y
-            self.pops += (not particle.damage) - particle.damage*6
+            self.pops += (particle.points > 0) - particle.damage*6
             self.rank = get_rank(self.pops)
             self.points += (self.rank + 1)*particle.points
             if(particle.points):
@@ -206,7 +206,6 @@ class Environment:
                     s = 1
                 else:
                     s = (2*p2.mass)*dot(dv,dx)/(dot(dx,dx)*(p2.mass+p1.mass))
-                    print(s)
                 k = scalar(s,dx)
                 p1.vel = sub(p1.vel,k)
                 k = scalar(p1.mass/p2.mass,k)
@@ -255,12 +254,16 @@ class Environment:
             play_sound('bounce.wav')
             particle.x = 2*particle.size - particle.x
             particle.vel[0]= - particle.vel[0]
-        if particle.y > self.height + particle.size - 150:
+        if particle.y > self.height -60 -particle.size:
             """Particle hit the bottom boundary"""
-            if (particle.colour != blue):
+            if (particle.colour == purple or particle.colour == red):
                 self.BubblePoP(particle)
                 if (particle.colour == red):
                     play_sound('hit.wav')
+            elif(particle.colour != blue):
+                particle.y = 2*(self.height - particle.size) - particle.y
+                particle.vel[1] = -particle.vel[1]
+
         elif particle.y < particle.size:
             """Particle hit the top boundary"""
             if(particle.colour == blue):

@@ -19,10 +19,10 @@ def draw_laser(screen,x0,y0,x1,y1,width,height,size):
 	xn = x0
 	yn = y0
 	flag = 1
-	if(angle != math.pi/2):
+	if(angle != math.pi/2 and angle != -math.pi/2):
 		r = (width-x0-size)/(15*abs(math.cos(angle)))
 	else:
-		r = 100
+		r = 50
 	n = r*math.cos(angle)
 	m = r*math.sin(angle)
 	while(yn >= 0 and yn <= height):#and xn >= 0 and xn <= width-size):
@@ -46,6 +46,14 @@ def draw_lifebar(screen,x0,y0,color,r,HP):
 		else:
 			full = False
 		draw_heart(screen,x0+50*i,y0,color,r,full)
+def draw_rects(screen,width,x0,y0,l,h,color):
+	x1 = x0-l
+	y1 = y0-h/2
+	#ygame.pydraw.rectangle(screen,( (x1,y1),(y1,y2) ), color  )
+	pygame.draw.rect(screen, color,  [(x1,y1),(l,h)], 0)
+	x1 = width-x0
+	y1 = y0-h/2
+	pygame.draw.rect(screen, color,  [(x1,y1),(l,h)], 0)
 
 """bgcolor = (255,255,255)
 pygame.init()
@@ -63,6 +71,8 @@ while running:
 	tick +=1
 	pygame.gfxdraw.filled_circle(screen, 300, 400, 1, (0,0,0))  # draw filled circle
 	pygame.gfxdraw.aacircle(screen, 300, 400, 30, (0,0,0)) 
+	pygame.gfxdraw.rectangle(screen,( (305,10),(20,20) ), (0,0,0)  )
+	draw_rects(screen,600,100,500,40,20,(0,0,0))
 	#draw_clock(screen,300,400,30+(tick%20),12,20,(0,0,0))
-	draw_laser(screen,300,400,400,500,width,height)
+	#draw_laser(screen,300,400,400,500,width,height)
 	pygame.display.flip()"""
