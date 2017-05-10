@@ -6,6 +6,7 @@ import os
 from sys import exit
 from pygame.locals import *
 import pygame.gfxdraw
+import random
 _sound_library = {}
 def play_sound(path):
   global _sound_library
@@ -32,13 +33,6 @@ def display_text(message,size,color,font,x,y):
 	text_width = text.get_width()
 	text_height = text.get_height()
 	screen.blit(text, ( x-(text_width)/2, y-(text_height)/2 ))
-def null_bubble(p):
-	p.points = 0
-	p.shockwave = False
-	p.message = ''
-	p.sound = 'plof.wav'
-	p.life = 0
-	p.damage = 0
 
 pygame.mixer.pre_init(44100, -16, 2, 512) # setup mixer to avoid sound lag
 pygame.init()
@@ -65,6 +59,8 @@ ticks_to_bomb = 240
 rankup_ticks = 0
 ticks_pop = 0
 ticks_gameover = 0
+ticks_to_freeze = 0
+ticks_to_laser = 0
 #-----------------------------
 
 #Font:
@@ -117,22 +113,22 @@ pygame.time.wait(500)
 ############Música##############
 pygame.mixer.music.play(-1,0.0)
 ################################
-
+time = 0
 ###############Looping principal###############################################################
 while running:
-
     dt = clock.tick(FPS)
+    time +=1
     #####################Queda dos meteoros####################
     if not ticks_to_particles:
-        ticks_to_particles = 240
-        env.addParticles(2,y = 0, damage = 1)
+        ticks_to_particles = 180
+        env.addParticles(3,y = 0, damage = 1, V = 1 + time/(FPS*100))
     else:
         ticks_to_particles -= 1
     ###########################################################
 
     ######################Queda dos bônus######################
     if not ticks_to_bonus:
-        bonus = env.addParticles(0,y = 0, colour = (0,200,0), life = 1, message = '+1 HP', label = 'HP', sound = 'life.wav')
+        bonus = env.addParticles(1,y = 20, colour = (0,200,0), life = 1, message = '+1 HP', label = 'HP', sound = 'life.wav')
         ticks_to_bonus = 720
     else:
         ticks_to_bonus -= 1
@@ -140,8 +136,8 @@ while running:
         
     ######################Queda das bombas######################
     if not ticks_to_bomb:
-        bomb = env.addParticles(0,y = 0, colour = (60,50,50),message = 'KABOOM !',label = 'TNT', sound = 'destroyed.wav')
-        ticks_to_bomb = 1200
+        bomb = env.addParticles(2,y = 25, colour = (60,50,50),message = 'KABOOM !',label = 'TNT', sound = 'destroyed.wav')
+        ticks_to_bomb = 1560
     else:
         ticks_to_bomb -= 1
     ############################################################    
@@ -150,9 +146,9 @@ while running:
     if not ticks_to_bullet:
         if(not bullet or (bullet.x !=x0 or bullet.y !=y0)):
             bullet = env.addParticles(x = x0,y = y0,size = 15, mass =1.5, colour = (0,0,255),vel = [0,0], life = 0, damage = 0, message = '',label = '')
-        ticks_to_bullet = 180
+            #ticks_to_bullet = 2*FPS
     else:
-        ticks_to_bullet -=1
+        ticks_to_bullet -=(not env.freeze)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -161,7 +157,17 @@ while running:
                 play_sound('launch.wav')
                 [xf,yf] = pygame.mouse.get_pos()
                 bullet.vel = PyParticles.aim(x0,y0,xf,yf)
-                ticks_to_bullet = 180 
+                ticks_to_bullet = 2*FPS 
+    ###################################################################
+
+    #########################Freeze####################################
+    if ticks_to_freeze == 7*FPS:
+    	env.addParticles(1,y = 50, colour = (165, 242, 243),message = 'Chilly !',label = 'F', sound = 'ice.wav', freeze = 1)
+    	ticks_to_freeze = 0
+    else:
+    	ticks_to_freeze += 1
+
+
     ###################################################################
     env.update()
     screen.fill(env.colour)
@@ -171,7 +177,7 @@ while running:
     ###########################################GAMEOVER##########################################
     if (not env.hp): 
     	for p in env.particles:
-    		null_bubble(p)
+    		p.null()
     		env.BubblePoP(p)
   
     	pygame.mixer.music.pause()
@@ -185,11 +191,12 @@ while running:
     ##################################################################################################	
     	
     
-    ########################Mira Laser###############################
+    ########################Graficos###############################
     [xl,yl] = pygame.mouse.get_pos()
     PyAnimation.draw_laser(screen,x0,y0,xl,yl,width,height,15)
     PyAnimation.draw_lifebar(screen,475,height - 25,(255,105,180),0.75,env.hp)
-    ########################MIra Laser - END########################
+    PyAnimation.draw_bullet_bar(screen,10 ,height - 35,int(2*FPS-(ticks_to_bullet % 121)),120,30,(0,0,255))
+    ###############################################################
     
     pygame.draw.rect(screen, (0, 0, 0), (0, 0, width, height-60),5) # Desenho das bordas
     
@@ -198,6 +205,8 @@ while running:
         #pygame.draw.circle(screen, p.colour, (int(p.x), int(p.y)), p.size, p.thickness)
         pygame.gfxdraw.filled_circle(screen, int(p.x), int(p.y), p.size, p.colour)  # draw filled circle
         pygame.gfxdraw.aacircle(screen, int(p.x), int(p.y), p.size, p.colour)
+        if(p.damage):
+        	pygame.gfxdraw.filled_circle(screen, int(p.x), int(p.y), int(p.size/2), (255,0,0))
         if(p.colour == (255,0,255)):  # draw border
         	label = label_font.render(str(int(p.protect/FPS)), 1, (0,0,0)) #Segundos de destruição nas bolhas
         else:
@@ -223,13 +232,16 @@ while running:
     	if   s.endurance < 0:
     		env.shockwaves.remove(s)
 
-    score = game_font.render(str(int(env.points)),1,(100,100,100))
-    score_width = score.get_width()
-    score_height = score.get_height()
+    display_text(str(int(env.points)),12,(255,215,0),'Ultra.ttf',width/2,height-40)
      #Mostra o score
     if(env.rank > UP or rankup_animation):
     	#print(env.rank)
-    	#print(rankup_ticks)
+    	#print(rankup_ticks)if(not tic)
+    	if(not ticks_to_laser):
+    		play_sound('laser.wav')
+    		ticks_to_laser = 300
+    	else:
+    		ticks_to_laser -= 1
     	if( not rankup_animation ):
     		print('oi')
     		rankup_animation = True
@@ -237,12 +249,9 @@ while running:
 	    	rankup_ticks += 1
 	    	P = int(14*rankup_ticks)
 	    	#print('P = ' + str(P))
-	    	PyAnimation.draw_rects(screen,width,P,(height-200)/2,80,30,(255,140,0))
+	    	PyAnimation.draw_rects(screen,width,P,(height-100)/2,80,30,(255,140,0))
 	    	if(P >= width/2 and P <= 6*width/2 ):
-	    		rankup = rank_font.render(env.messages[env.rank],1,(255,140,0))
-	    		rankup_width = rankup.get_width()
-	    		rankup_height = rankup.get_height()
-	    		screen.blit(rankup,  ( (width - rankup_width)/2,(height-200-rankup_height)/2 ))
+	    		display_text(env.messages[env.rank],32,(255,140,0),'Bombing.ttf',width/2,(height-100)/2)
 	    	elif(P > 6*width/2):
 	    		#print('oi')
 	    		rankup_animation = False
@@ -256,7 +265,6 @@ while running:
     rank = game_font.render(str(env.rank + 1) + 'x' ,1,(100,100,100))
     rank_width = rank.get_width()
     rank_height = rank.get_height()
-    screen.blit(score, ( (width - score_width)/2,height-60))
     screen.blit(rank,  ( (width - rank_width)/2,height-90))
 
 
@@ -264,12 +272,32 @@ while running:
     pygame.display.flip()
 
 #####################SCORE SCREEN####################################
-
-
-
-f = open('highscore.txt', 'w')
-f.write(str(env.points))  # python will convert \n to os.linesep
-f.close()
+Score_Screen = True
+f = open('highscore.txt', 'r+')
+hs = int(f.read())
+if(env.points > hs):
+	g = open('highscore.txt.tmp', 'w')
+	g.write(str(env.points))
+	f.close()
+	g.close()
+	os.remove('highscore.txt')
+	os.renames('highscore.txt.tmp', 'highscore.txt')
+	hs = env.points
+	play_sound('yeshs.wav')
+else:
+	play_sound('nohs.wav')
+while(Score_Screen):
+	screen.fill(env.colour)
+	display_text('Your Score: ',48,(255,215,0),'GoodDog.otf',width/2, height/4)
+	display_text(str(env.points),64,(0,0,0),'Ultra.ttf',width/2,height/4 + 40)
+	display_text('High Score: ',48,(255,215,0),'GoodDog.otf',width/2, 3*height/4 )
+	display_text(str(hs),64,(0,0,0),'Ultra.ttf',width/2,3*height/4 + 40)
+	for event in pygame.event.get():
+		if event.type == pygame.QUIT:
+			Score_Screen = False
+		elif event.type == pygame.MOUSEBUTTONUP:
+			pass
+	pygame.display.flip()
 
 
     

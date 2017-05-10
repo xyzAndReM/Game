@@ -54,6 +54,9 @@ def draw_rects(screen,width,x0,y0,l,h,color):
 	x1 = width-x0
 	y1 = y0-h/2
 	pygame.draw.rect(screen, color,  [(x1,y1),(l,h)], 0)
+def draw_bullet_bar(screen,x0,y0,l,L,h,color):
+	pygame.draw.rect(screen, color,  [(x0,y0),(L,h)], 3)
+	pygame.draw.rect(screen, color,  [(x0,y0),(l,h)], 0)
 
 """bgcolor = (255,255,255)
 pygame.init()
