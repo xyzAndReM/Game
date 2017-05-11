@@ -93,10 +93,12 @@ class Particle():
         self.colour = purple
         self.points = 100
         self.damage = 0
+        self.freeze = 0
     def chill(self):
         self.colour = ice
         self.label = 'F'
         self.sound = 'ice.wav'
+        self.freeze = 1
     def move(self):
         self.x += self.vel[0]#Movimento na coordenada x
         self.y -= self.vel[1]#Movimento na coordenada y
@@ -128,6 +130,7 @@ class Environment:
         self.rank = 0 #Ranking, decidido pela função get_rank
         self.messages = ['','Cacthy!', 'Ballistick!', 'Awesome!!!','Sensational!!!'] #Messagens indicadoras do ranking
         self.hp = 3
+        self.max_hp = 3
         self.freeze = 0
     def addParticles(self, n=1, **kwargs):
         """ Add n particles with properties given by keyword arguments """
@@ -158,18 +161,30 @@ class Environment:
             colour = particle.colour
             x = particle.x
             y = particle.y
-            self.pops += (particle.points > 0) - particle.damage*10
-            self.rank = get_rank(self.pops)
-            self.points += (self.rank + 1)*particle.points
+
+            self.pops += (particle.points > 0) - particle.damage*10 #Guardando o numero de bolas estouradas para determinar o rank, se dano eh tomado o ranking eh diminuido
+
+            self.rank = get_rank(self.pops) #função que retorna o ranking
+
+            self.points += (self.rank + 1)*particle.points #acumulação de pontos que depende do atual ranking
+            
             if(particle.points):
-                particle.message = '+' + str(int((self.rank + 1)*particle.points)) + ' pts'
-            self.grave.append(Ghost(x,y,particle.message,colour))
-            if(self.hp < 3):
+                particle.message = '+' + str(int((self.rank + 1)*particle.points)) + ' pts' #alterando a pontuação fornecida por cada particula
+            
+            self.grave.append(Ghost(x,y,particle.message,colour)) #criando o fantasma que guarda a posição da morte das particulas, importante para as animações de morte
+
+            if(self.hp < self.max_hp): #Recuperando vida
                 self.hp += particle.life
-            self.hp -= particle.damage
-            self.freeze += 2*particle.freeze*FPS
-            self.particles.remove(particle)
-            if(particle.colour == gray):
+
+            self.hp -= particle.damage #Recebendo dano
+
+            self.freeze += 2*particle.freeze*FPS #Congelando a barra de carregamento
+
+            if(self.freeze > 0 and particle.damage): #Ao receber dano congelado, o coração quebra e não pode ser mais recuperado( ANTES SOFRIA AGORA SOU FRIA)
+                self.max_hp -= 1
+
+            self.particles.remove(particle) #Remover a particula
+            if(particle.colour == gray): #Se a particula é cinza criar uma onde de choque
                 self.shockwaves.append(Shockwave(x,y))
 
     def color_power(self,p1,p2):
