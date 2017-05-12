@@ -54,7 +54,7 @@ def play_sound(path):
 
 def get_rank(n):
     """Atribui rank apartir do numero de pops"""
-    k = int(n/7)
+    k = int(n/20)
     if k > 4:
         k = 4
     elif k < 0:
@@ -85,7 +85,7 @@ class Particle():
         self.life = 0# HP fornecida ao ser estourada
         self.shockwave = False #Marca se todas as bolhas devem explodir
         self.points = 0 #Pontos fornecidos quando a bolha explodir
-        self.message = '-1 HP'
+        self.message = 'Ouch!'
         self.label = 'DMG'
         self.sound = 'plof.wav'
         self.freeze = 0
@@ -99,6 +99,7 @@ class Particle():
         self.label = 'F'
         self.sound = 'ice.wav'
         self.freeze = 1
+        self.message = 'Icy!'
     def move(self):
         self.x += self.vel[0]#Movimento na coordenada x
         self.y -= self.vel[1]#Movimento na coordenada y
@@ -141,7 +142,7 @@ class Environment:
             y = kwargs.get('y', random.uniform(size, self.height-size))
             p = Particle(x, y, size)
             V = kwargs.get('V', 1)
-            p.vel = kwargs.get('vel', [V*random.uniform(0.5,1),V*random.uniform(0.5,1)])
+            p.vel = kwargs.get('vel', [V*random.uniform(0.3,0.8),V*random.uniform(0.5,1)])
             p.colour = kwargs.get('colour', (255, 0, 0))
             p.life = kwargs.get('life',0)
             p.damage = kwargs.get('damage',0)

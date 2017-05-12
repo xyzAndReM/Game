@@ -41,7 +41,7 @@ pygame.display.set_caption('Bubble Shock')
 (width, height) = (600, 700)
 x0 = width/2
 y0 = height
-FPS = 60*2
+FPS = 120
 
 
 
@@ -86,6 +86,7 @@ rankup_animation = False
 MENU = True
 flag = False
 clock = pygame.time.Clock()
+loading = False
 #--------------------------------------------------------------------------
 
 ############################MENU####################################################
@@ -125,7 +126,7 @@ while running:
     #####################Queda dos meteoros####################
     if not ticks_to_particles:
         ticks_to_particles = 180
-        env.addParticles(3,y = 0, damage = 1, V = 1 + time/(FPS*100))
+        env.addParticles(2,y = 0, damage = 1, V = 1 + time/(FPS*100))
     else:
         ticks_to_particles -= 1
     ###########################################################
@@ -140,17 +141,17 @@ while running:
         
     ######################Queda das bombas######################
     if not ticks_to_bomb:
-        bomb = env.addParticles(2,y = 25, colour = (60,50,50),message = 'KABOOM !',label = 'TNT', sound = 'destroyed.wav')
-        ticks_to_bomb = 1560
+        bomb = env.addParticles(1,y = 25, colour = (60,50,50),message = 'KABOOM !',label = 'TNT', sound = 'destroyed.wav')
+        ticks_to_bomb = FPS*4
     else:
         ticks_to_bomb -= 1
     ############################################################    
 
     ######################Disparos###########################
     if not ticks_to_bullet:
-        if(not bullet or (bullet.x !=x0 or bullet.y !=y0)):
+        if(not bullet or  not loading):
             bullet = env.addParticles(x = x0,y = y0,size = 15, mass =1.5, colour = (0,0,255),vel = [0,0], life = 0, damage = 0, message = '',label = '')
-            #ticks_to_bullet = 2*FPS
+            loading = True
     else:
         ticks_to_bullet -=3*(not env.freeze)
         print(env.freeze)
@@ -162,11 +163,12 @@ while running:
                 play_sound('launch.wav')
                 [xf,yf] = pygame.mouse.get_pos()
                 bullet.vel = PyParticles1.aim(x0,y0,xf,yf)
-                ticks_to_bullet = 2*FPS 
+                ticks_to_bullet = 2*FPS
+                loading = False 
     ###################################################################
 
     #########################Freeze####################################
-    if ticks_to_freeze == 5*FPS:
+    if ticks_to_freeze == 8*FPS:
     	env.addParticles(2,y = 50, colour = (165, 242, 243),message = 'Chilly !',label = 'F', sound = 'ice.wav', freeze = 1)
     	ticks_to_freeze = 0
     else:
@@ -208,7 +210,7 @@ while running:
     else:
     	bullet_bar_color = (0,0,255)
     PyAnimation.draw_laser(screen,x0,y0,xl,yl,width,height,15) #O laser da mira
-    PyAnimation.draw_lifebar(screen,475,height - 25,(255,105,180),0.75,env.hp) #Desenha os corações no canto da tela
+    PyAnimation.draw_lifebar(screen,475,height - 25,(255,105,180),0.75,env.hp,env.max_hp) #Desenha os corações no canto da tela
     PyAnimation.draw_bullet_bar(screen,10 ,height - 35,int(2*FPS-(ticks_to_bullet)),240,30,bullet_bar_color) #Desenha a barra de carregamento da bala
     pygame.draw.rect(screen, (0, 0, 0), (0, 0, width, height-60),5) # Desenho das bordas
     display_text(str(int(env.points)),12,(255,215,0),'Ultra.ttf',width/2,height-40) #MOstra do score
@@ -253,6 +255,7 @@ while running:
     ##########################ANIMAÇÃO DO RANKUP##########################################################
     if(env.rank > UP or rankup_animation):
     	if(not ticks_to_laser):
+    		play_sound('iha.wav')
     		play_sound('laser.wav')
     		ticks_to_laser = 300
     	if( not rankup_animation ):
